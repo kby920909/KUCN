@@ -1,0 +1,13 @@
+{
+  "name": "naver-login-app",
+  "private": true,
+  "description": "React + TypeScript + Express + Docker + AWS",
+  "scripts": {
+    "dev:api": "cd api && npm run dev",
+    "dev:frontend": "cd frontend && npm run dev",
+    "build:api": "cd api && npm run build",
+    "build:frontend": "cd frontend && npm run build",
+    "docker:up": "docker compose up -d --build",
+    "docker:down": "docker compose down"
+  }
+}

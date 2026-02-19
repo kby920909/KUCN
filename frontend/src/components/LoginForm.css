@@ -1,0 +1,225 @@
+.login-wrapper {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  background: linear-gradient(to bottom, #f8f9fa, #ffffff);
+}
+
+.login-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  max-width: 100%;
+  gap: 0;
+}
+
+.login-box {
+  width: 100%;
+  max-width: 340px;
+  padding: 40px 30px 30px;
+  background: #fff;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  border-radius: 8px;
+  text-align: center;
+}
+
+.login-divider {
+  margin: 30px 0;
+  position: relative;
+  width: 100%;
+  max-width: 340px;
+  height: 1px;
+  background: #e0e0e0;
+}
+
+.login-box-toss {
+  margin-top: 0;
+}
+
+.toss-logo {
+  margin-bottom: 28px;
+}
+
+.toss-logo span {
+  font-size: 2.1rem;
+  font-weight: bold;
+  color: #3182f6;
+  letter-spacing: -1px;
+}
+
+.toss-login-btn {
+  background: linear-gradient(135deg, #3182f6 0%, #1e6dd9 100%) !important;
+  box-shadow: 0 4px 12px rgba(49, 130, 246, 0.3) !important;
+}
+
+.toss-login-btn:hover:not(:disabled) {
+  background: linear-gradient(135deg, #1e6dd9 0%, #1557b8 100%) !important;
+  box-shadow: 0 6px 16px rgba(49, 130, 246, 0.4) !important;
+  transform: translateY(-2px);
+}
+
+.naver-logo {
+  margin-bottom: 28px;
+}
+
+.naver-logo span {
+  font-size: 2.1rem;
+  font-weight: bold;
+  color: #03c75a;
+  letter-spacing: -1px;
+}
+
+.login-box input {
+  width: 100%;
+  padding: 12px;
+  margin: 10px 0 15px 0;
+  border: 1px solid #d6d6d6;
+  border-radius: 5px;
+  font-size: 1rem;
+}
+
+.login-box input:focus {
+  outline: none;
+  border-color: #03c75a;
+}
+
+.login-box button {
+  width: 100%;
+  padding: 12px;
+  background: #03c75a;
+  color: #fff;
+  border: none;
+  border-radius: 5px;
+  font-size: 1.1rem;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.login-box button:hover:not(:disabled) {
+  background: #029a3e;
+}
+
+.login-box button:disabled {
+  opacity: 0.8;
+  cursor: not-allowed;
+}
+
+.error-msg {
+  color: #e74c3c;
+  font-size: 0.9rem;
+  margin: 0 0 10px 0;
+}
+
+.login-success {
+  max-width: 400px;
+  margin: 100px auto;
+  padding: 40px;
+  background: #fff;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  border-radius: 8px;
+  text-align: center;
+}
+
+.login-success h2 {
+  color: #333;
+  margin-bottom: 20px;
+}
+
+.login-success a {
+  color: #03c75a;
+  text-decoration: none;
+  font-weight: bold;
+}
+
+.login-success a:hover {
+  text-decoration: underline;
+}
+
+/* 반응형 디자인 - PC에서 좌우 배치 */
+@media (min-width: 769px) {
+  .login-container {
+    flex-direction: row;
+    align-items: center;
+    gap: 24px;
+    max-width: 1200px;
+  }
+
+  .login-box {
+    max-width: 400px;
+    padding: 48px 40px 40px;
+    flex: 1;
+  }
+
+  .login-divider {
+    margin: 0;
+    width: 1px;
+    height: 250px;
+    max-width: 1px;
+    flex-shrink: 0;
+    background: #e0e0e0;
+    align-self: center;
+  }
+}
+
+@media (min-width: 1025px) {
+  .login-container {
+    gap: 32px;
+  }
+
+  .login-box {
+    max-width: 450px;
+    padding: 56px 48px 48px;
+  }
+
+  .login-divider {
+    height: 280px;
+  }
+}
+
+@media (min-width: 1400px) {
+  .login-container {
+    gap: 40px;
+  }
+
+  .login-box {
+    max-width: 500px;
+    padding: 64px 56px 56px;
+  }
+
+  .login-divider {
+    height: 320px;
+  }
+}
+
+/* 모바일 반응형 - 세로 배치 유지 */
+@media (max-width: 768px) {
+  .login-wrapper {
+    padding: 20px 16px;
+  }
+
+  .login-container {
+    flex-direction: column;
+  }
+
+  .login-box {
+    max-width: 340px;
+    padding: 32px 24px 24px;
+  }
+
+  .login-divider {
+    max-width: 340px;
+    margin: 24px 0;
+    height: 1px;
+    width: 100%;
+  }
+
+  .naver-logo span,
+  .toss-logo span {
+    font-size: 1.8rem;
+  }
+}

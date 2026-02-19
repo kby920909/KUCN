@@ -1,0 +1,14 @@
+# 로컬 개발용: 프론트는 Vite, API만 Docker로 띄울 때 사용
+version: '3.8'
+
+services:
+  api:
+    build: ./api
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=development
+      - PORT=3000
+    volumes:
+      - ./api/src:/app/src
+    command: npx tsx watch src/index.ts

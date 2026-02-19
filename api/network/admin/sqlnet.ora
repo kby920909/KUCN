@@ -1,0 +1,2 @@
+# ORA-12547 해결 시도: OOB 비활성화
+DISABLE_OOB=ON
