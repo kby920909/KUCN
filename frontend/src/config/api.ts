@@ -16,11 +16,12 @@ import { Capacitor } from '@capacitor/core';
 // PC의 로컬 IP 주소로 변경하세요 (예: http://192.168.0.100:3000)
 const DEV_API_SERVER = 'http://192.168.5.49:3000';
 
-// 프로덕션 서버 URL (실제 배포 시 사용)
+// 프로덕션 서버 URL (Vercel 배포 URL)
+// Vercel 배포 후 생성된 URL로 변경하세요 (예: https://kucn.vercel.app)
 // 환경 변수에서 가져오거나 직접 설정
 const PROD_API_SERVER = import.meta.env.VITE_API_URL 
   ? import.meta.env.VITE_API_URL.replace(/\/api$/, '') // /api 제거
-  : 'https://your-production-server.com';
+  : 'https://kucn-app.vercel.app/'; // 여기를 Vercel 배포 URL로 변경
 
 // 환경에 따라 API URL 결정
 const getApiBase = (): string => {

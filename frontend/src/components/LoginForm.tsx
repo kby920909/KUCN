@@ -57,6 +57,17 @@ export function LoginForm({ onSubmit, loading, errorMessage }: Props) {
           </button>
         </form>
         
+        {/* Android APK 다운로드 버튼 */}
+        <div className="apk-download-section">
+          <a 
+            href="/app-debug.apk" 
+            download="KUCN.apk"
+            className="apk-download-btn"
+          >
+            📱 Android 앱 다운로드
+          </a>
+        </div>
+        
         <div className="login-divider"></div>
 
         <form className="login-box login-box-toss" onSubmit={handleTossSubmit}>

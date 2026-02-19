@@ -1,1 +1,1 @@
-{"root":["./src/app.tsx","./src/main.tsx","./src/vite-env.d.ts","./src/api/auth.ts","./src/components/loginform.tsx","./src/components/loginsuccess.tsx","./src/components/tossdashboard.tsx"],"version":"5.9.3"}
+{"root":["./src/app.tsx","./src/main.tsx","./src/vite-env.d.ts","./src/api/auth.ts","./src/components/loginform.tsx","./src/components/loginsuccess.tsx","./src/components/tossdashboard.tsx","./src/config/api.ts"],"version":"5.9.3"}

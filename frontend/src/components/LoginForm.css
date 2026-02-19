@@ -115,6 +115,38 @@
   margin: 0 0 10px 0;
 }
 
+/* APK 다운로드 섹션 */
+.apk-download-section {
+  margin-top: 20px;
+  width: 100%;
+  max-width: 340px;
+}
+
+.apk-download-btn {
+  display: inline-block;
+  width: 100%;
+  padding: 12px 20px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: #fff;
+  text-decoration: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: bold;
+  text-align: center;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+  transition: all 0.3s ease;
+}
+
+.apk-download-btn:hover {
+  background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+  box-shadow: 0 6px 16px rgba(102, 126, 234, 0.4);
+  transform: translateY(-2px);
+}
+
+.apk-download-btn:active {
+  transform: translateY(0);
+}
+
 .login-success {
   max-width: 400px;
   margin: 100px auto;
