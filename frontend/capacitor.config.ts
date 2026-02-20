@@ -18,6 +18,9 @@ const config: CapacitorConfig = {
     },
   },
   plugins: {
+    App: {
+      disableBackButtonHandler: true,
+    },
     SplashScreen: {
       launchShowDuration: 2000,
       launchAutoHide: true,

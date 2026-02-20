@@ -1,27 +1,34 @@
 import { useEffect, useRef } from 'react';
-import { Capacitor } from '@capacitor/core';
-import { App } from '@capacitor/app';
 
 // 앱 전역 뒤로가기 핸들러 (등록한 컴포넌트가 제어)
 const backHandlerRef = { current: null as (() => void) | null };
 
-export function getBackHandlerRef() {
-  return backHandlerRef;
-}
-
 /**
  * 안드로이드 뒤로가기 버튼 - 전역 리스너 1회 등록
+ * 원격 URL 로드 시 브리지 준비 대기
  */
 export function useBackButtonSetup() {
   useEffect(() => {
-    if (!Capacitor.isNativePlatform()) return;
+    let handle: { remove: () => Promise<void> } | null = null;
 
-    const listener = App.addListener('backButton', () => {
-      backHandlerRef.current?.();
-    });
+    const setup = async () => {
+      try {
+        const { Capacitor } = await import('@capacitor/core');
+        if (!Capacitor.isNativePlatform()) return;
 
+        const { App } = await import('@capacitor/app');
+        await new Promise((r) => setTimeout(r, 300));
+        handle = await App.addListener('backButton', () => {
+          backHandlerRef.current?.();
+        });
+      } catch {
+        // 웹 환경 등에서는 무시
+      }
+    };
+
+    setup();
     return () => {
-      listener.then((l) => l.remove());
+      handle?.remove?.();
     };
   }, []);
 }
