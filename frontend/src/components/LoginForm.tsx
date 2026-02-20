@@ -12,6 +12,7 @@ export function LoginForm({ onSubmit, loading, errorMessage }: Props) {
   const [classicPw, setClassicPw] = useState('');
   const [tossId, setTossId] = useState('');
   const [tossPw, setTossPw] = useState('');
+  const [apkDownloading, setApkDownloading] = useState(false);
 
   const handleClassicSubmit = (e: FormEvent) => {
     e.preventDefault();
@@ -27,23 +28,34 @@ export function LoginForm({ onSubmit, loading, errorMessage }: Props) {
 
   const apkUrl = `${window.location.origin}/app-debug.apk`;
 
+  const handleApkDownload = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    setApkDownloading(true);
+    try {
+      const res = await fetch(apkUrl);
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'KUCN.apk';
+      a.style.display = 'none';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch {
+      window.open(apkUrl, '_blank');
+    } finally {
+      setApkDownloading(false);
+    }
+  };
+
   return (
     <div className="login-wrapper">
       <div className="login-container">
-        {/* Android APK 다운로드 버튼 - 로그인 위쪽 */}
-        <div className="apk-download-section apk-download-top">
-          <a
-            href={apkUrl}
-            download="KUCN.apk"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="apk-download-btn"
-          >
-            📱 Android 앱 다운로드
-          </a>
-        </div>
-
-        <form className="login-box" onSubmit={handleClassicSubmit}>
+        {/* 로그인 영역: 두 개 나란히(PC) / 세로(모바일) */}
+        <div className="login-forms-row">
+          <form className="login-box" onSubmit={handleClassicSubmit}>
           <div className="naver-logo">
             <span>KUCN</span>
           </div>
@@ -101,6 +113,19 @@ export function LoginForm({ onSubmit, loading, errorMessage }: Props) {
             {loading ? '로그인 중...' : '로그인'}
           </button>
         </form>
+        </div>
+
+        {/* Android APK 다운로드 - 로그인 아래 */}
+        <div className="apk-download-section">
+          <button
+            type="button"
+            onClick={handleApkDownload}
+            className="apk-download-btn"
+            disabled={apkDownloading}
+          >
+            {apkDownloading ? '다운로드 중...' : '📱 Android 앱 다운로드'}
+          </button>
+        </div>
       </div>
     </div>
   );
