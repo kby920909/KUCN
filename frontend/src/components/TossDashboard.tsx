@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import './TossDashboard.css';
 import { useApiAuth } from '../config/env';
 import { checkSession, extendSession } from '../api/auth';
+import { useBackHandler } from '../hooks/useBackButton';
 
 const SESSION_KEY = 'kucn_session';
 const SESSION_EXPIRY_KEY = 'kucn_session_expiry';
@@ -56,6 +57,7 @@ type Props = {
   userId: string;
   onLogout: () => void;
   onSwitchToClassic: () => void;
+  onBackButton: () => void;
 };
 
 type PageType = 'main' | 'notice' | 'announcement' | 'hr' | 'calendar';
@@ -121,7 +123,7 @@ const articles: Record<string, Article> = {
   }
 };
 
-export function TossDashboard({ userId, onLogout, onSwitchToClassic }: Props) {
+export function TossDashboard({ userId, onLogout, onSwitchToClassic, onBackButton }: Props) {
   const apiAuth = useApiAuth();
   const [currentPage, setCurrentPage] = useState<PageType>('main');
   const [selectedArticle, setSelectedArticle] = useState<Article | null>(null);
@@ -131,6 +133,19 @@ export function TossDashboard({ userId, onLogout, onSwitchToClassic }: Props) {
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, [currentPage, selectedArticle]);
+
+  const handleBack = () => {
+    if (selectedArticle) {
+      setSelectedArticle(null);
+    } else if (currentPage !== 'main') {
+      setCurrentPage('main');
+      setSelectedArticle(null);
+    } else {
+      onBackButton();
+    }
+  };
+
+  useBackHandler(handleBack);
 
   useEffect(() => {
     const updateSessionTime = async () => {

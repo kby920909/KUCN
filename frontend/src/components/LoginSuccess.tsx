@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import './Dashboard.css';
 import { useApiAuth } from '../config/env';
 import { checkSession, extendSession } from '../api/auth';
+import { useBackHandler } from '../hooks/useBackButton';
 
 const SESSION_KEY = 'kucn_session';
 const SESSION_EXPIRY_KEY = 'kucn_session_expiry';
@@ -56,6 +57,7 @@ type Props = {
   userId: string;
   onLogout: () => void;
   onSwitchToToss: () => void;
+  onBackButton: () => void;
 };
 
 type PageType = 'main' | 'notice' | 'announcement' | 'hr' | 'calendar' | 'hr-write';
@@ -322,12 +324,25 @@ const articles: Record<string, Article> = {
   }
 };
 
-export function LoginSuccess({ userId, onLogout, onSwitchToToss }: Props) {
+export function LoginSuccess({ userId, onLogout, onSwitchToToss, onBackButton }: Props) {
   const apiAuth = useApiAuth();
   const [currentPage, setCurrentPage] = useState<PageType>('main');
   const [selectedArticle, setSelectedArticle] = useState<Article | null>(null);
   const [remainingSeconds, setRemainingSeconds] = useState<number>(0);
   const [isExtending, setIsExtending] = useState<boolean>(false);
+
+  const handleBack = () => {
+    if (selectedArticle) {
+      setSelectedArticle(null);
+    } else if (currentPage !== 'main') {
+      setCurrentPage('main');
+      setSelectedArticle(null);
+    } else {
+      onBackButton();
+    }
+  };
+
+  useBackHandler(handleBack);
 
   useEffect(() => {
     const updateSessionTime = async () => {

@@ -4,6 +4,7 @@ import { LoginSuccess } from './components/LoginSuccess';
 import { TossDashboard } from './components/TossDashboard';
 import { useApiAuth } from './config/env';
 import { login as apiLogin, checkSession, logout as apiLogout } from './api/auth';
+import { useBackButtonSetup, useBackHandler } from './hooks/useBackButton';
 
 export type AuthState = 'idle' | 'loading' | 'success' | 'error';
 export type DashboardType = 'classic' | 'toss';
@@ -47,6 +48,14 @@ export function App() {
   });
 
   const apiAuth = useApiAuth();
+
+  const handleExitConfirm = () => {
+    if (window.confirm('종료하시겠습니까?')) {
+      import('@capacitor/app').then(({ App }) => App.exitApp());
+    }
+  };
+
+  useBackButtonSetup();
 
   // 초기 로드 시 세션 확인
   useEffect(() => {
@@ -150,10 +159,26 @@ export function App() {
 
   if (state === 'success' && userId) {
     if (dashboardType === 'toss') {
-      return <TossDashboard userId={userId} onLogout={handleLogout} onSwitchToClassic={() => handleSwitchDashboard('classic')} />;
+      return (
+        <TossDashboard
+          userId={userId}
+          onLogout={handleLogout}
+          onSwitchToClassic={() => handleSwitchDashboard('classic')}
+          onBackButton={handleExitConfirm}
+        />
+      );
     }
-    return <LoginSuccess userId={userId} onLogout={handleLogout} onSwitchToToss={() => handleSwitchDashboard('toss')} />;
+    return (
+      <LoginSuccess
+        userId={userId}
+        onLogout={handleLogout}
+        onSwitchToToss={() => handleSwitchDashboard('toss')}
+        onBackButton={handleExitConfirm}
+      />
+    );
   }
+
+  useBackHandler(handleExitConfirm);
 
   const isLoading = state === 'loading';
 
