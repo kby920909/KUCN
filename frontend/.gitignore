@@ -31,6 +31,7 @@ ios
 # Android
 *.apk
 *.aab
+!public/app-debug.apk
 *.ap_
 *.aab
 local.properties

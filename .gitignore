@@ -34,6 +34,7 @@ ios/
 # Android
 *.apk
 *.aab
+!frontend/public/app-debug.apk
 *.ap_
 local.properties
 *.jks
