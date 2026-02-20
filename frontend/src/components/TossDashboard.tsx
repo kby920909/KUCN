@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
 import './TossDashboard.css';
+import { useApiAuth } from '../config/env';
+import { checkSession, extendSession } from '../api/auth';
 
 const SESSION_KEY = 'kucn_session';
 const SESSION_EXPIRY_KEY = 'kucn_session_expiry';
@@ -120,6 +122,7 @@ const articles: Record<string, Article> = {
 };
 
 export function TossDashboard({ userId, onLogout, onSwitchToClassic }: Props) {
+  const apiAuth = useApiAuth();
   const [currentPage, setCurrentPage] = useState<PageType>('main');
   const [selectedArticle, setSelectedArticle] = useState<Article | null>(null);
   const [remainingSeconds, setRemainingSeconds] = useState<number>(0);
@@ -129,22 +132,31 @@ export function TossDashboard({ userId, onLogout, onSwitchToClassic }: Props) {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, [currentPage, selectedArticle]);
 
-  // 세션 시간 확인 및 업데이트 (localStorage 기반)
   useEffect(() => {
-    const updateSessionTime = () => {
-      const session = checkLocalSession();
-      if (session) {
-        setRemainingSeconds(session.remainingMinutes * 60);
+    const updateSessionTime = async () => {
+      if (apiAuth) {
+        try {
+          const res = await checkSession();
+          if (res.ok) {
+            const data = await res.json();
+            setRemainingSeconds((data.remainingMinutes ?? 0) * 60);
+          } else {
+            onLogout();
+          }
+        } catch {
+          onLogout();
+        }
       } else {
-        // 세션 만료 시 로그아웃
-        onLogout();
+        const session = checkLocalSession();
+        if (session) {
+          setRemainingSeconds(session.remainingMinutes * 60);
+        } else {
+          onLogout();
+        }
       }
     };
 
-    // 초기 로드 시 즉시 확인
     updateSessionTime();
-
-    // 1초마다 업데이트
     const interval = setInterval(() => {
       setRemainingSeconds((prev) => {
         if (prev <= 1) {
@@ -154,22 +166,24 @@ export function TossDashboard({ userId, onLogout, onSwitchToClassic }: Props) {
         return prev - 1;
       });
     }, 1000);
-
     return () => clearInterval(interval);
-  }, [onLogout]);
+  }, [onLogout, apiAuth]);
 
-  // 세션 연장 핸들러 (localStorage 기반)
-  const handleExtendSession = () => {
+  const handleExtendSession = async () => {
     setIsExtending(true);
-    setTimeout(() => {
-      if (extendLocalSession()) {
-        const session = checkLocalSession();
-        if (session) {
-          setRemainingSeconds(session.remainingMinutes * 60);
+    if (apiAuth) {
+      try {
+        const res = await extendSession();
+        if (res.ok) {
+          const data = await res.json();
+          setRemainingSeconds((data.remainingMinutes ?? 30) * 60);
         }
-      }
-      setIsExtending(false);
-    }, 300);
+      } catch {}
+    } else if (extendLocalSession()) {
+      const session = checkLocalSession();
+      if (session) setRemainingSeconds(session.remainingMinutes * 60);
+    }
+    setIsExtending(false);
   };
 
   // 시간 포맷팅 (MM:SS)

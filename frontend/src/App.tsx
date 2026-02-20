@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { LoginForm } from './components/LoginForm';
 import { LoginSuccess } from './components/LoginSuccess';
 import { TossDashboard } from './components/TossDashboard';
+import { useApiAuth } from './config/env';
+import { login as apiLogin, checkSession, logout as apiLogout } from './api/auth';
 
 export type AuthState = 'idle' | 'loading' | 'success' | 'error';
 export type DashboardType = 'classic' | 'toss';
@@ -12,41 +14,21 @@ const SESSION_EXPIRY_KEY = 'kucn_session_expiry';
 
 // 사번 생성 함수 (6자리 숫자)
 function generateEmployeeId(userId: string): string {
-  // 특정 아이디에 대해 고정 사번 할당
-  if (userId.toLowerCase() === 'rlaqudduq997') {
-    return '013001';
-  }
-  
-  // 다른 사용자에 대해서는 랜덤 6자리 숫자 생성
-  // 사용자별로 일관된 사번을 위해 userId의 해시값 기반으로 생성
-  const hash = userId.split('').reduce((acc, char) => {
-    return ((acc << 5) - acc) + char.charCodeAt(0);
-  }, 0);
-  
-  // 음수 방지 및 6자리 숫자로 변환
-  const num = Math.abs(hash) % 1000000;
-  return String(num).padStart(6, '0');
+  if (userId.toLowerCase() === 'rlaqudduq997') return '013001';
+  const hash = userId.split('').reduce((acc, char) => ((acc << 5) - acc) + char.charCodeAt(0), 0);
+  return String(Math.abs(hash) % 1000000).padStart(6, '0');
 }
 
-// 세션 확인 함수
 function checkLocalSession(): { userId: string; employeeId: string } | null {
   const sessionData = localStorage.getItem(SESSION_KEY);
   const expiry = localStorage.getItem(SESSION_EXPIRY_KEY);
-  
-  if (!sessionData || !expiry) {
-    return null;
-  }
-  
-  const now = Date.now();
+  if (!sessionData || !expiry) return null;
   const expiryTime = parseInt(expiry, 10);
-  
-  // 세션 만료 확인 (30분)
-  if (now > expiryTime) {
+  if (Date.now() > expiryTime) {
     localStorage.removeItem(SESSION_KEY);
     localStorage.removeItem(SESSION_EXPIRY_KEY);
     return null;
   }
-  
   try {
     return JSON.parse(sessionData);
   } catch {
@@ -64,16 +46,36 @@ export function App() {
     return (saved === 'toss' || saved === 'classic') ? saved : 'classic';
   });
 
-  // 초기 로드 시 세션 확인 (localStorage 기반)
+  const apiAuth = useApiAuth();
+
+  // 초기 로드 시 세션 확인
   useEffect(() => {
-    const session = checkLocalSession();
-    if (session) {
-      setUserId(session.userId);
-      setState('success');
-    } else {
-      setState('idle');
-    }
-  }, []);
+    const restoreSession = async () => {
+      if (apiAuth) {
+        try {
+          const res = await checkSession();
+          if (res.ok) {
+            const data = await res.json();
+            setUserId(data.userId);
+            setState('success');
+          } else {
+            setState('idle');
+          }
+        } catch {
+          setState('idle');
+        }
+      } else {
+        const session = checkLocalSession();
+        if (session) {
+          setUserId(session.userId);
+          setState('success');
+        } else {
+          setState('idle');
+        }
+      }
+    };
+    restoreSession();
+  }, [apiAuth]);
 
   // 타이틀 설정
   useEffect(() => {
@@ -84,8 +86,7 @@ export function App() {
     }
   }, [state, userId]);
 
-  const handleLogin = (id: string, pw: string, type: DashboardType = 'classic') => {
-    // 입력 검증
+  const handleLogin = async (id: string, pw: string, type: DashboardType = 'classic') => {
     if (!id.trim() || !pw.trim()) {
       setErrorMessage('아이디와 비밀번호를 입력해 주세요.');
       setState('error');
@@ -97,29 +98,44 @@ export function App() {
     setDashboardType(type);
     localStorage.setItem(DASHBOARD_TYPE_KEY, type);
 
-    // 더미 로그인: 입력만 있으면 로그인 성공
-    // 실제로는 비밀번호 검증 없이 바로 로그인 처리
-    setTimeout(() => {
-      const employeeId = generateEmployeeId(id.trim());
-      const sessionData = {
-        userId: id.trim(),
-        employeeId: employeeId,
-      };
-      
-      // 세션 정보를 localStorage에 저장 (30분 만료)
-      const expiryTime = Date.now() + 30 * 60 * 1000; // 30분
-      localStorage.setItem(SESSION_KEY, JSON.stringify(sessionData));
-      localStorage.setItem(SESSION_EXPIRY_KEY, expiryTime.toString());
-      
-      setUserId(id.trim());
-      setState('success');
-    }, 300); // 로딩 효과를 위한 짧은 딜레이
+    if (apiAuth) {
+      try {
+        const res = await apiLogin(id.trim(), pw);
+        if (res.ok) {
+          const data = await res.json();
+          setUserId(data.userId ?? id.trim());
+          setState('success');
+        } else {
+          const err = await res.json().catch(() => ({}));
+          setErrorMessage(err.message ?? '로그인에 실패했습니다.');
+          setState('error');
+        }
+      } catch {
+        setErrorMessage('서버에 연결할 수 없습니다. API 서버를 실행해 주세요.');
+        setState('error');
+      }
+    } else {
+      setTimeout(() => {
+        const employeeId = generateEmployeeId(id.trim());
+        const sessionData = { userId: id.trim(), employeeId };
+        const expiryTime = Date.now() + 30 * 60 * 1000;
+        localStorage.setItem(SESSION_KEY, JSON.stringify(sessionData));
+        localStorage.setItem(SESSION_EXPIRY_KEY, expiryTime.toString());
+        setUserId(id.trim());
+        setState('success');
+      }, 300);
+    }
   };
 
-  const handleLogout = () => {
-    // localStorage에서 세션 정보 제거
-    localStorage.removeItem(SESSION_KEY);
-    localStorage.removeItem(SESSION_EXPIRY_KEY);
+  const handleLogout = async () => {
+    if (apiAuth) {
+      try {
+        await apiLogout();
+      } catch {}
+    } else {
+      localStorage.removeItem(SESSION_KEY);
+      localStorage.removeItem(SESSION_EXPIRY_KEY);
+    }
     setUserId(null);
     setState('idle');
     setErrorMessage('');
@@ -132,11 +148,6 @@ export function App() {
     localStorage.setItem(DASHBOARD_TYPE_KEY, type); // localStorage에 저장
   };
 
-  // 로딩 중일 때는 아무것도 표시하지 않음 (또는 로딩 스피너)
-  if (state === 'loading') {
-    return null; // 또는 로딩 스피너 컴포넌트
-  }
-
   if (state === 'success' && userId) {
     if (dashboardType === 'toss') {
       return <TossDashboard userId={userId} onLogout={handleLogout} onSwitchToClassic={() => handleSwitchDashboard('classic')} />;
@@ -144,10 +155,12 @@ export function App() {
     return <LoginSuccess userId={userId} onLogout={handleLogout} onSwitchToToss={() => handleSwitchDashboard('toss')} />;
   }
 
+  const isLoading = state === 'loading';
+
   return (
     <LoginForm
       onSubmit={handleLogin}
-      loading={false}
+      loading={isLoading}
       errorMessage={errorMessage}
     />
   );
