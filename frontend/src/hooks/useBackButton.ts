@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect } from 'react';
 
 // 앱 전역 뒤로가기 핸들러 (등록한 컴포넌트가 제어)
 const backHandlerRef = { current: null as (() => void) | null };
