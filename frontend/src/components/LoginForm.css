@@ -18,15 +18,6 @@
   gap: 0;
 }
 
-/* 로그인 두 개 + 구분선을 하나의 행으로 */
-.login-forms-row {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  width: 100%;
-  gap: 0;
-}
-
 .login-box {
   width: 100%;
   max-width: 340px;
@@ -35,41 +26,6 @@
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   border-radius: 8px;
   text-align: center;
-}
-
-.login-divider {
-  margin: 30px 0;
-  position: relative;
-  width: 100%;
-  max-width: 340px;
-  height: 1px;
-  background: #e0e0e0;
-}
-
-.login-box-toss {
-  margin-top: 0;
-}
-
-.toss-logo {
-  margin-bottom: 28px;
-}
-
-.toss-logo span {
-  font-size: 2.1rem;
-  font-weight: bold;
-  color: #3182f6;
-  letter-spacing: -1px;
-}
-
-.toss-login-btn {
-  background: linear-gradient(135deg, #3182f6 0%, #1e6dd9 100%) !important;
-  box-shadow: 0 4px 12px rgba(49, 130, 246, 0.3) !important;
-}
-
-.toss-login-btn:hover:not(:disabled) {
-  background: linear-gradient(135deg, #1e6dd9 0%, #1557b8 100%) !important;
-  box-shadow: 0 6px 16px rgba(49, 130, 246, 0.4) !important;
-  transform: translateY(-2px);
 }
 
 .naver-logo {
@@ -124,12 +80,13 @@
   margin: 0 0 10px 0;
 }
 
-/* APK 다운로드 섹션 - 로그인 아래 */
+/* APK 다운로드 - 로그인과 같은 너비 */
 .apk-download-section {
   width: 100%;
   max-width: 340px;
-  margin-top: 28px;
+  margin-top: 20px;
   flex-shrink: 0;
+  padding: 0;
 }
 
 .apk-download-btn {
@@ -166,11 +123,6 @@
 
 /* 모바일 터치 최적화 */
 @media (max-width: 768px) {
-  .apk-download-section {
-    max-width: 100%;
-    padding: 0 16px;
-  }
-
   .apk-download-btn {
     min-height: 48px;
     padding: 14px 20px;
@@ -208,38 +160,16 @@
   text-decoration: underline;
 }
 
-/* 반응형 - PC: 로그인 두 개 나란히, 그 아래 APK 버튼 */
+/* PC 반응형 */
 @media (min-width: 769px) {
-  .login-container {
-    max-width: 900px;
-  }
-
-  .login-forms-row {
-    flex-direction: row;
-    align-items: stretch;
-    gap: 0;
-    max-width: 100%;
-  }
-
   .login-box {
     max-width: 380px;
     padding: 48px 40px 40px;
-    flex: 1;
-  }
-
-  .login-divider {
-    margin: 0;
-    width: 1px;
-    height: auto;
-    min-height: 280px;
-    max-width: 1px;
-    flex-shrink: 0;
-    background: #e0e0e0;
-    align-self: stretch;
   }
 
   .apk-download-section {
-    margin-top: 32px;
+    max-width: 380px;
+    margin-top: 24px;
   }
 }
 
@@ -248,16 +178,20 @@
     max-width: 400px;
     padding: 56px 48px 48px;
   }
+
+  .apk-download-section {
+    max-width: 400px;
+  }
 }
 
 @media (min-width: 1400px) {
-  .login-container {
-    max-width: 1000px;
+  .login-box {
+    max-width: 420px;
+    padding: 64px 56px 56px;
   }
 
-  .login-box {
-    max-width: 440px;
-    padding: 64px 56px 56px;
+  .apk-download-section {
+    max-width: 420px;
   }
 }
 
@@ -267,31 +201,17 @@
     padding: 20px 16px;
   }
 
-  .login-forms-row {
-    flex-direction: column;
-  }
-
   .login-box {
     max-width: 340px;
     padding: 32px 24px 24px;
   }
 
-  .login-divider {
-    max-width: 340px;
-    margin: 24px 0;
-    height: 1px;
-    min-height: 1px;
-    width: 100%;
-  }
-
   .apk-download-section {
-    margin-top: 24px;
-    padding: 0 16px;
-    max-width: 100%;
+    margin-top: 20px;
+    max-width: 340px;
   }
 
-  .naver-logo span,
-  .toss-logo span {
+  .naver-logo span {
     font-size: 1.8rem;
   }
 }
