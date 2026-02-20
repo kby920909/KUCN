@@ -5,11 +5,8 @@ const config: CapacitorConfig = {
   appName: 'KUCN',
   webDir: 'dist',
   server: {
+    url: 'https://kucn-app.vercel.app',
     androidScheme: 'https',
-    // 개발 중에는 localhost 사용 가능하도록 설정
-    // 배포 시에는 실제 서버 URL로 변경
-    // url: 'http://192.168.5.49:5173',
-    // cleartext: true
   },
   android: {
     allowMixedContent: true,
