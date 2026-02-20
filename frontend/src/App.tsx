@@ -157,6 +157,9 @@ export function App() {
     localStorage.setItem(DASHBOARD_TYPE_KEY, type); // localStorage에 저장
   };
 
+  // 훅은 조건부 return 위에서 항상 호출 (React 규칙)
+  useBackHandler(handleExitConfirm);
+
   if (state === 'success' && userId) {
     if (dashboardType === 'toss') {
       return (
@@ -177,8 +180,6 @@ export function App() {
       />
     );
   }
-
-  useBackHandler(handleExitConfirm);
 
   const isLoading = state === 'loading';
 
