@@ -25,9 +25,24 @@ export function LoginForm({ onSubmit, loading, errorMessage }: Props) {
     onSubmit(tossId.trim(), tossPw, 'toss');
   };
 
+  const apkUrl = `${window.location.origin}/app-debug.apk`;
+
   return (
     <div className="login-wrapper">
       <div className="login-container">
+        {/* Android APK 다운로드 버튼 - 로그인 위쪽 */}
+        <div className="apk-download-section apk-download-top">
+          <a
+            href={apkUrl}
+            download="KUCN.apk"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="apk-download-btn"
+          >
+            📱 Android 앱 다운로드
+          </a>
+        </div>
+
         <form className="login-box" onSubmit={handleClassicSubmit}>
           <div className="naver-logo">
             <span>KUCN</span>
@@ -56,17 +71,6 @@ export function LoginForm({ onSubmit, loading, errorMessage }: Props) {
             {loading ? '로그인 중...' : '로그인'}
           </button>
         </form>
-        
-        {/* Android APK 다운로드 버튼 */}
-        <div className="apk-download-section">
-          <a 
-            href="/app-debug.apk" 
-            download="KUCN.apk"
-            className="apk-download-btn"
-          >
-            📱 Android 앱 다운로드
-          </a>
-        </div>
         
         <div className="login-divider"></div>
 

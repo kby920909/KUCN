@@ -115,11 +115,27 @@
   margin: 0 0 10px 0;
 }
 
-/* APK 다운로드 섹션 */
+/* APK 다운로드 섹션 - 로그인 위쪽 */
 .apk-download-section {
-  margin-top: 20px;
   width: 100%;
   max-width: 340px;
+}
+
+.apk-download-top {
+  margin-bottom: 24px;
+  flex-shrink: 0;
+}
+
+/* 데스크톱: 버튼 전체 너비로 표시 */
+@media (min-width: 769px) {
+  .apk-download-section {
+    flex-basis: 100%;
+    max-width: 100%;
+  }
+
+  .apk-download-btn {
+    max-width: 340px;
+  }
 }
 
 .apk-download-btn {
@@ -145,6 +161,25 @@
 
 .apk-download-btn:active {
   transform: translateY(0);
+}
+
+/* 모바일 터치 최적화 */
+@media (max-width: 768px) {
+  .apk-download-section {
+    max-width: 100%;
+    padding: 0 16px;
+  }
+
+  .apk-download-btn {
+    min-height: 48px;
+    padding: 14px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    -webkit-tap-highlight-color: rgba(0, 0, 0, 0.1);
+    touch-action: manipulation;
+    cursor: pointer;
+  }
 }
 
 .login-success {
