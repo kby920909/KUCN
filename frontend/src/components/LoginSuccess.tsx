@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import './Dashboard.css';
 import { useApiAuth } from '../config/env';
 import { checkSession, extendSession } from '../api/auth';
+import { fetchInbox, fetchSent, sendMail } from '../api/mail';
 import { useBackHandler } from '../hooks/useBackButton';
 
 const SESSION_KEY = 'kucn_session';
@@ -60,7 +61,7 @@ type Props = {
   onBackButton: () => void;
 };
 
-type PageType = 'main' | 'notice' | 'announcement' | 'hr' | 'calendar' | 'hr-write';
+type PageType = 'main' | 'notice' | 'announcement' | 'hr' | 'calendar' | 'hr-write' | 'mail';
 
 type Article = {
   id: string;
@@ -324,15 +325,41 @@ const articles: Record<string, Article> = {
   }
 };
 
+type MailBoxType = 'inbox' | 'sent';
+
+type MailItem = {
+  id: number;
+  fromUserId: string;
+  toUserId: string;
+  subject: string;
+  body: string;
+  createdAt: string;
+  isRead: number;
+};
+
 export function LoginSuccess({ userId, onLogout, onSwitchToToss, onBackButton }: Props) {
   const apiAuth = useApiAuth();
   const [currentPage, setCurrentPage] = useState<PageType>('main');
   const [selectedArticle, setSelectedArticle] = useState<Article | null>(null);
   const [remainingSeconds, setRemainingSeconds] = useState<number>(0);
   const [isExtending, setIsExtending] = useState<boolean>(false);
+  const [mailBox, setMailBox] = useState<MailBoxType>('inbox');
+  const [mailItems, setMailItems] = useState<MailItem[]>([]);
+  const [selectedMail, setSelectedMail] = useState<MailItem | null>(null);
+  const [isLoadingMail, setIsLoadingMail] = useState<boolean>(false);
+  const [mailError, setMailError] = useState<string | null>(null);
+  const [composeMode, setComposeMode] = useState<boolean>(false);
+  const [composeTo, setComposeTo] = useState<string>('');
+  const [composeSubject, setComposeSubject] = useState<string>('');
+  const [composeBody, setComposeBody] = useState<string>('');
+  const [isSending, setIsSending] = useState<boolean>(false);
 
   const handleBack = () => {
-    if (selectedArticle) {
+    if (selectedMail) {
+      setSelectedMail(null);
+    } else if (composeMode) {
+      setComposeMode(false);
+    } else if (selectedArticle) {
       setSelectedArticle(null);
     } else if (currentPage !== 'main') {
       setCurrentPage('main');
@@ -404,7 +431,7 @@ export function LoginSuccess({ userId, onLogout, onSwitchToToss, onBackButton }:
     const secs = seconds % 60;
     return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
   };
-  const [currentDate, setCurrentDate] = useState(new Date());
+  const [currentDate, setCurrentDate] = useState(new Date(2026, 2, 1));
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [hrFormData, setHrFormData] = useState({
     title: '',
@@ -525,6 +552,220 @@ export function LoginSuccess({ userId, onLogout, onSwitchToToss, onBackButton }:
           {article.content.split('\n').map((line, idx) => (
             <p key={idx}>{line || '\u00A0'}</p>
           ))}
+        </div>
+      </div>
+    );
+  };
+
+  const loadMail = async (box: MailBoxType) => {
+    setIsLoadingMail(true);
+    setMailError(null);
+    setSelectedMail(null);
+    setComposeMode(false);
+    try {
+      const res = box === 'inbox' ? await fetchInbox() : await fetchSent();
+      if (!res.ok) {
+        setMailError('메일 목록을 불러오지 못했습니다.');
+        setMailItems([]);
+        return;
+      }
+      const data = await res.json();
+      setMailItems((data.items ?? []) as MailItem[]);
+    } catch {
+      setMailError('메일 목록을 불러오는 중 오류가 발생했습니다.');
+      setMailItems([]);
+    } finally {
+      setIsLoadingMail(false);
+    }
+  };
+
+  useEffect(() => {
+    if (currentPage === 'mail') {
+      loadMail(mailBox);
+    }
+  }, [currentPage, mailBox]);
+
+  const handleSendMail = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!composeTo.trim() || !composeSubject.trim() || !composeBody.trim()) {
+      alert('받는 사람, 제목, 내용을 모두 입력해 주세요.');
+      return;
+    }
+    setIsSending(true);
+    try {
+      const res = await sendMail(composeTo, composeSubject, composeBody);
+      if (!res.ok) {
+        const data = await res.json().catch(() => null);
+        alert(data?.message ?? '메일 발송에 실패했습니다.');
+        return;
+      }
+      alert('메일이 발송되었습니다.');
+      setComposeTo('');
+      setComposeSubject('');
+      setComposeBody('');
+      setComposeMode(false);
+      loadMail(mailBox);
+    } finally {
+      setIsSending(false);
+    }
+  };
+
+  const renderMailContent = () => {
+    if (composeMode) {
+      return (
+        <div className="mail-compose">
+          <div className="mail-compose-header">
+            <h2 className="mail-title">메일 보내기</h2>
+            <button
+              type="button"
+              className="mail-back-button"
+              onClick={() => setComposeMode(false)}
+            >
+              취소
+            </button>
+          </div>
+          <form className="mail-form" onSubmit={handleSendMail}>
+            <div className="mail-form-row">
+              <label className="mail-label">받는 사람</label>
+              <input
+                type="text"
+                className="mail-input"
+                value={composeTo}
+                onChange={(e) => setComposeTo(e.target.value)}
+                placeholder="USER_ID를 입력하세요 (예: admin)"
+                required
+              />
+            </div>
+            <div className="mail-form-row">
+              <label className="mail-label">제목</label>
+              <input
+                type="text"
+                className="mail-input"
+                value={composeSubject}
+                onChange={(e) => setComposeSubject(e.target.value)}
+                placeholder="메일 제목을 입력하세요"
+                required
+              />
+            </div>
+            <div className="mail-form-row">
+              <label className="mail-label">내용</label>
+              <textarea
+                className="mail-textarea"
+                value={composeBody}
+                onChange={(e) => setComposeBody(e.target.value)}
+                placeholder="메일 내용을 입력하세요"
+                rows={12}
+                required
+              />
+            </div>
+            <div className="mail-actions">
+              <button
+                type="submit"
+                className="mail-send-button"
+                disabled={isSending}
+              >
+                {isSending ? '발송 중...' : '보내기'}
+              </button>
+            </div>
+          </form>
+        </div>
+      );
+    }
+
+    if (selectedMail) {
+      return (
+        <div className="mail-detail">
+          <button
+            className="back-button"
+            onClick={() => setSelectedMail(null)}
+          >
+            ← 목록으로
+          </button>
+          <div className="mail-detail-header">
+            <h2 className="mail-detail-subject">{selectedMail.subject}</h2>
+            <div className="mail-detail-meta">
+              <span className="mail-meta-item">
+                보낸 사람: {selectedMail.fromUserId}
+              </span>
+              <span className="mail-meta-item">
+                받는 사람: {selectedMail.toUserId}
+              </span>
+              <span className="mail-meta-item">
+                보낸 시각: {selectedMail.createdAt}
+              </span>
+            </div>
+          </div>
+          <div className="mail-detail-body">
+            {selectedMail.body.split('\n').map((line, idx) => (
+              <p key={idx}>{line || '\u00A0'}</p>
+            ))}
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <div className="mail-layout">
+        <div className="mail-sidebar">
+          <button
+            className={`mail-tab ${mailBox === 'inbox' ? 'active' : ''}`}
+            onClick={() => setMailBox('inbox')}
+          >
+            받은메일함
+          </button>
+          <button
+            className={`mail-tab ${mailBox === 'sent' ? 'active' : ''}`}
+            onClick={() => setMailBox('sent')}
+          >
+            보낸메일함
+          </button>
+          <button
+            className="mail-compose-button"
+            onClick={() => setComposeMode(true)}
+          >
+            새 메일
+          </button>
+        </div>
+        <div className="mail-list-area">
+          <div className="mail-list-header">
+            <h2 className="mail-title">
+              {mailBox === 'inbox' ? '받은메일함' : '보낸메일함'}
+            </h2>
+          </div>
+          {isLoadingMail ? (
+            <div className="mail-empty">메일을 불러오는 중입니다...</div>
+          ) : mailError ? (
+            <div className="mail-empty">{mailError}</div>
+          ) : mailItems.length === 0 ? (
+            <div className="mail-empty">표시할 메일이 없습니다.</div>
+          ) : (
+            <ul className="mail-list">
+              {mailItems.map((mail) => (
+                <li
+                  key={mail.id}
+                  className="mail-item"
+                  onClick={() => setSelectedMail(mail)}
+                >
+                  <div className="mail-item-main">
+                    <span className="mail-item-subject">{mail.subject}</span>
+                    <span className="mail-item-preview">
+                      {mail.body.length > 60
+                        ? `${mail.body.slice(0, 60)}...`
+                        : mail.body}
+                    </span>
+                  </div>
+                  <div className="mail-item-meta">
+                    <span className="mail-item-user">
+                      {mailBox === 'inbox'
+                        ? `보낸 사람: ${mail.fromUserId}`
+                        : `받는 사람: ${mail.toUserId}`}
+                    </span>
+                    <span className="mail-item-date">{mail.createdAt}</span>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
       </div>
     );
@@ -821,6 +1062,12 @@ export function LoginSuccess({ userId, onLogout, onSwitchToToss, onBackButton }:
             </div>
           </div>
         );
+      case 'mail':
+        return (
+          <div className="page-content">
+            {renderMailContent()}
+          </div>
+        );
       default:
         return renderMainDashboard();
     }
@@ -926,6 +1173,15 @@ export function LoginSuccess({ userId, onLogout, onSwitchToToss, onBackButton }:
             }}
           >
             달력
+          </button>
+          <button 
+            className={`nav-item ${currentPage === 'mail' && !selectedArticle ? 'active' : ''}`}
+            onClick={() => {
+              setCurrentPage('mail');
+              setSelectedArticle(null);
+            }}
+          >
+            메일
           </button>
         </nav>
       </header>

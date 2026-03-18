@@ -3,6 +3,7 @@ import express from 'express';
 import cors from 'cors';
 import session from 'express-session';
 import { authRouter } from '../src/routes/auth';
+import { mailRouter } from '../src/routes/mail';
 
 const app = express();
 
@@ -26,6 +27,7 @@ app.use(session({
 }));
 
 app.use('/api/auth', authRouter);
+app.use('/api/mail', mailRouter);
 
 app.get('/api/health', (_req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });

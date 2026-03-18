@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import './TossDashboard.css';
 import { useApiAuth } from '../config/env';
 import { checkSession, extendSession } from '../api/auth';
+import { fetchInbox, fetchSent, sendMail } from '../api/mail';
 import { useBackHandler } from '../hooks/useBackButton';
 
 const SESSION_KEY = 'kucn_session';
@@ -60,7 +61,7 @@ type Props = {
   onBackButton: () => void;
 };
 
-type PageType = 'main' | 'notice' | 'announcement' | 'hr' | 'calendar';
+type PageType = 'main' | 'notice' | 'announcement' | 'hr' | 'calendar' | 'mail';
 
 type Article = {
   id: string;
@@ -123,19 +124,45 @@ const articles: Record<string, Article> = {
   }
 };
 
+type MailBoxType = 'inbox' | 'sent';
+
+type MailItem = {
+  id: number;
+  fromUserId: string;
+  toUserId: string;
+  subject: string;
+  body: string;
+  createdAt: string;
+  isRead: number;
+};
+
 export function TossDashboard({ userId, onLogout, onSwitchToClassic, onBackButton }: Props) {
   const apiAuth = useApiAuth();
   const [currentPage, setCurrentPage] = useState<PageType>('main');
   const [selectedArticle, setSelectedArticle] = useState<Article | null>(null);
   const [remainingSeconds, setRemainingSeconds] = useState<number>(0);
   const [isExtending, setIsExtending] = useState<boolean>(false);
+  const [mailBox, setMailBox] = useState<MailBoxType>('inbox');
+  const [mailItems, setMailItems] = useState<MailItem[]>([]);
+  const [selectedMail, setSelectedMail] = useState<MailItem | null>(null);
+  const [isLoadingMail, setIsLoadingMail] = useState<boolean>(false);
+  const [mailError, setMailError] = useState<string | null>(null);
+  const [composeMode, setComposeMode] = useState<boolean>(false);
+  const [composeTo, setComposeTo] = useState<string>('');
+  const [composeSubject, setComposeSubject] = useState<string>('');
+  const [composeBody, setComposeBody] = useState<string>('');
+  const [isSending, setIsSending] = useState<boolean>(false);
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, [currentPage, selectedArticle]);
 
   const handleBack = () => {
-    if (selectedArticle) {
+    if (selectedMail) {
+      setSelectedMail(null);
+    } else if (composeMode) {
+      setComposeMode(false);
+    } else if (selectedArticle) {
       setSelectedArticle(null);
     } else if (currentPage !== 'main') {
       setCurrentPage('main');
@@ -222,6 +249,14 @@ export function TossDashboard({ userId, onLogout, onSwitchToClassic, onBackButto
   const renderPageContent = () => {
     if (selectedArticle) {
       return renderArticleDetail(selectedArticle);
+    }
+
+    if (currentPage === 'mail') {
+      return (
+        <div className="toss-page-content">
+          {renderMailContent()}
+        </div>
+      );
     }
 
     switch (currentPage) {
@@ -312,14 +347,14 @@ export function TossDashboard({ userId, onLogout, onSwitchToClassic, onBackButto
                 <div className="toss-calendar">
                   <div className="toss-calendar-header">
                     <button className="toss-calendar-nav">‹</button>
-                    <span className="toss-calendar-month">2026년 2월</span>
+                    <span className="toss-calendar-month">2026년 3월</span>
                     <button className="toss-calendar-nav">›</button>
                   </div>
                   <div className="toss-calendar-grid">
                     {['일', '월', '화', '수', '목', '금', '토'].map((day) => (
                       <div key={day} className="toss-calendar-weekday">{day}</div>
                     ))}
-                    {Array.from({ length: 28 }, (_, i) => i + 1).map((day) => (
+                    {Array.from({ length: 31 }, (_, i) => i + 1).map((day) => (
                       <div key={day} className="toss-calendar-day">{day}</div>
                     ))}
                   </div>
@@ -331,6 +366,226 @@ export function TossDashboard({ userId, onLogout, onSwitchToClassic, onBackButto
       default:
         return renderMainDashboard();
     }
+  };
+
+  const loadMail = async (box: MailBoxType) => {
+    setIsLoadingMail(true);
+    setMailError(null);
+    setSelectedMail(null);
+    setComposeMode(false);
+    try {
+      const res = box === 'inbox' ? await fetchInbox() : await fetchSent();
+      if (!res.ok) {
+        setMailError('메일 목록을 불러오지 못했습니다.');
+        setMailItems([]);
+        return;
+      }
+      const data = await res.json();
+      setMailItems((data.items ?? []) as MailItem[]);
+    } catch {
+      setMailError('메일 목록을 불러오는 중 오류가 발생했습니다.');
+      setMailItems([]);
+    } finally {
+      setIsLoadingMail(false);
+    }
+  };
+
+  useEffect(() => {
+    if (currentPage === 'mail') {
+      loadMail(mailBox);
+    }
+  }, [currentPage, mailBox]);
+
+  const handleSendMail = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!composeTo.trim() || !composeSubject.trim() || !composeBody.trim()) {
+      alert('받는 사람, 제목, 내용을 모두 입력해 주세요.');
+      return;
+    }
+    setIsSending(true);
+    try {
+      const res = await sendMail(composeTo, composeSubject, composeBody);
+      if (!res.ok) {
+        const data = await res.json().catch(() => null);
+        alert(data?.message ?? '메일 발송에 실패했습니다.');
+        return;
+      }
+      alert('메일이 발송되었습니다.');
+      setComposeTo('');
+      setComposeSubject('');
+      setComposeBody('');
+      setComposeMode(false);
+      loadMail(mailBox);
+    } finally {
+      setIsSending(false);
+    }
+  };
+
+  const renderMailContent = () => {
+    if (composeMode) {
+      return (
+        <div className="toss-mail-compose">
+          <div className="toss-mail-compose-header">
+            <h2 className="toss-mail-title">메일 보내기</h2>
+            <button
+              type="button"
+              className="toss-mail-back-button"
+              onClick={() => setComposeMode(false)}
+            >
+              취소
+            </button>
+          </div>
+          <form className="toss-mail-form" onSubmit={handleSendMail}>
+            <div className="toss-mail-form-row">
+              <label className="toss-mail-label">받는 사람</label>
+              <input
+                type="text"
+                className="toss-mail-input"
+                value={composeTo}
+                onChange={(e) => setComposeTo(e.target.value)}
+                placeholder="USER_ID를 입력하세요 (예: admin)"
+                required
+              />
+            </div>
+            <div className="toss-mail-form-row">
+              <label className="toss-mail-label">제목</label>
+              <input
+                type="text"
+                className="toss-mail-input"
+                value={composeSubject}
+                onChange={(e) => setComposeSubject(e.target.value)}
+                placeholder="메일 제목을 입력하세요"
+                required
+              />
+            </div>
+            <div className="toss-mail-form-row">
+              <label className="toss-mail-label">내용</label>
+              <textarea
+                className="toss-mail-textarea"
+                value={composeBody}
+                onChange={(e) => setComposeBody(e.target.value)}
+                placeholder="메일 내용을 입력하세요"
+                rows={12}
+                required
+              />
+            </div>
+            <div className="toss-mail-actions">
+              <button
+                type="submit"
+                className="toss-mail-send-button"
+                disabled={isSending}
+              >
+                {isSending ? '발송 중...' : '보내기'}
+              </button>
+            </div>
+          </form>
+        </div>
+      );
+    }
+
+    if (selectedMail) {
+      return (
+        <div className="toss-mail-detail">
+          <button
+            className="toss-back-button"
+            onClick={() => setSelectedMail(null)}
+          >
+            ← 목록으로
+          </button>
+          <div className="toss-mail-detail-header">
+            <h2 className="toss-mail-detail-subject">
+              {selectedMail.subject}
+            </h2>
+            <div className="toss-mail-detail-meta">
+              <span className="toss-mail-meta-item">
+                보낸 사람: {selectedMail.fromUserId}
+              </span>
+              <span className="toss-mail-meta-item">
+                받는 사람: {selectedMail.toUserId}
+              </span>
+              <span className="toss-mail-meta-item">
+                보낸 시각: {selectedMail.createdAt}
+              </span>
+            </div>
+          </div>
+          <div className="toss-mail-detail-body">
+            {selectedMail.body.split('\n').map((line, idx) => (
+              <p key={idx}>{line || '\u00A0'}</p>
+            ))}
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <div className="toss-mail-layout">
+        <div className="toss-mail-sidebar">
+          <button
+            className={`toss-mail-tab ${mailBox === 'inbox' ? 'active' : ''}`}
+            onClick={() => setMailBox('inbox')}
+          >
+            받은메일함
+          </button>
+          <button
+            className={`toss-mail-tab ${mailBox === 'sent' ? 'active' : ''}`}
+            onClick={() => setMailBox('sent')}
+          >
+            보낸메일함
+          </button>
+          <button
+            className="toss-mail-compose-button"
+            onClick={() => setComposeMode(true)}
+          >
+            새 메일
+          </button>
+        </div>
+        <div className="toss-mail-list-area">
+          <div className="toss-mail-list-header">
+            <h2 className="toss-mail-title">
+              {mailBox === 'inbox' ? '받은메일함' : '보낸메일함'}
+            </h2>
+          </div>
+          {isLoadingMail ? (
+            <div className="toss-mail-empty">메일을 불러오는 중입니다...</div>
+          ) : mailError ? (
+            <div className="toss-mail-empty">{mailError}</div>
+          ) : mailItems.length === 0 ? (
+            <div className="toss-mail-empty">표시할 메일이 없습니다.</div>
+          ) : (
+            <ul className="toss-mail-list">
+              {mailItems.map((mail) => (
+                <li
+                  key={mail.id}
+                  className="toss-mail-item"
+                  onClick={() => setSelectedMail(mail)}
+                >
+                  <div className="toss-mail-item-main">
+                    <span className="toss-mail-item-subject">
+                      {mail.subject}
+                    </span>
+                    <span className="toss-mail-item-preview">
+                      {mail.body.length > 60
+                        ? `${mail.body.slice(0, 60)}...`
+                        : mail.body}
+                    </span>
+                  </div>
+                  <div className="toss-mail-item-meta">
+                    <span className="toss-mail-item-user">
+                      {mailBox === 'inbox'
+                        ? `보낸 사람: ${mail.fromUserId}`
+                        : `받는 사람: ${mail.toUserId}`}
+                    </span>
+                    <span className="toss-mail-item-date">
+                      {mail.createdAt}
+                    </span>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      </div>
+    );
   };
 
   const renderMainDashboard = () => {
@@ -417,14 +672,14 @@ export function TossDashboard({ userId, onLogout, onSwitchToClassic, onBackButto
             <div className="toss-calendar">
               <div className="toss-calendar-header">
                 <button className="toss-calendar-nav">‹</button>
-                <span className="toss-calendar-month">2026년 2월</span>
+                <span className="toss-calendar-month">2026년 3월</span>
                 <button className="toss-calendar-nav">›</button>
               </div>
               <div className="toss-calendar-grid">
                 {['일', '월', '화', '수', '목', '금', '토'].map((day) => (
                   <div key={day} className="toss-calendar-weekday">{day}</div>
                 ))}
-                {Array.from({ length: 28 }, (_, i) => i + 1).map((day) => (
+                {Array.from({ length: 31 }, (_, i) => i + 1).map((day) => (
                   <div key={day} className="toss-calendar-day">{day}</div>
                 ))}
               </div>
@@ -535,6 +790,12 @@ export function TossDashboard({ userId, onLogout, onSwitchToClassic, onBackButto
               onClick={() => setCurrentPage('calendar')}
             >
               달력
+            </button>
+            <button 
+              className={`toss-nav-item ${currentPage === 'mail' ? 'active' : ''}`}
+              onClick={() => setCurrentPage('mail')}
+            >
+              메일
             </button>
           </div>
         </nav>

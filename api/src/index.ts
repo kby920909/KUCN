@@ -4,6 +4,7 @@ import cors from 'cors';
 import session from 'express-session';
 import os from 'os';
 import { authRouter } from './routes/auth';
+import { mailRouter } from './routes/mail';
 
 const app = express();
 const port = process.env.PORT ?? 3000;
@@ -25,6 +26,13 @@ app.use(cors({
 }));
 app.use(express.json());
 
+// DB 없이 로그인 (index.ts 아이디/비밀번호 사용). USE_INDEX_LOGIN=1 일 때만 적용
+const USE_INDEX_LOGIN = process.env.USE_INDEX_LOGIN === '1';
+const LOGIN_USER_ID = 'admin';
+const LOGIN_PASSWORD = 'admin123';
+app.set('useIndexLogin', USE_INDEX_LOGIN);
+app.set('loginCredentials', { userId: LOGIN_USER_ID, password: LOGIN_PASSWORD });
+
 // 세션 설정 (30분 만료)
 app.use(session({
   secret: process.env.SESSION_SECRET || 'your-secret-key-change-in-production',
@@ -39,6 +47,7 @@ app.use(session({
 }));
 
 app.use('/api/auth', authRouter);
+app.use('/api/mail', mailRouter);
 
 app.get('/api/health', (_req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });

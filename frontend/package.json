@@ -12,13 +12,16 @@
     "cap:open": "npx cap open",
     "cap:run": "npx cap run",
     "android:build": "npm run build && npx cap sync android && npx cap open android",
-    "android:sync": "npm run build && npx cap sync android"
+    "android:sync": "npm run build && npx cap sync android",
+    "ios:build": "npm run build && npx cap sync ios && npx cap open ios",
+    "ios:sync": "npm run build && npx cap sync ios"
   },
   "dependencies": {
     "@capacitor/android": "^6.0.0",
     "@capacitor/app": "^6.0.0",
     "@capacitor/core": "^6.0.0",
     "@capacitor/haptics": "^6.0.0",
+    "@capacitor/ios": "^6.0.0",
     "@capacitor/keyboard": "^6.0.0",
     "@capacitor/status-bar": "^6.0.0",
     "react": "^18.2.0",
