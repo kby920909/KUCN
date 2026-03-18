@@ -2,7 +2,11 @@ import path from 'path';
 import fs from 'fs';
 import initSqlJs, { Database as SqlJsDb } from 'sql.js';
 
-const dbPath = path.join(__dirname, '..', '..', 'data', 'local.db');
+// Vercel 서버리스 환경은 파일시스템이 읽기 전용 → /tmp 사용
+const isVercel = process.env.VERCEL === '1';
+const dbPath = isVercel
+  ? '/tmp/kucn-local.db'
+  : path.join(__dirname, '..', '..', 'data', 'local.db');
 
 let db: SqlJsDb | null = null;
 
@@ -19,9 +23,17 @@ async function getDb(): Promise<SqlJsDb> {
       db = new SQL.Database();
     }
     initTable(db);
-    fs.writeFileSync(dbPath, Buffer.from(db.export()));
+    saveDb(db);
   }
   return db;
+}
+
+function saveDb(dbInstance: SqlJsDb): void {
+  try {
+    fs.writeFileSync(dbPath, Buffer.from(dbInstance.export()));
+  } catch {
+    // Vercel /tmp 외부 경로에서 쓰기 실패 시 무시 (in-memory로만 동작)
+  }
 }
 
 function initTable(dbInstance: SqlJsDb): void {
@@ -42,8 +54,8 @@ function initTable(dbInstance: SqlJsDb): void {
       CREATED_AT TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
       IS_READ INTEGER NOT NULL DEFAULT 0
     );
-    CREATE INDEX IF NOT EXISTS idx_mails_to_user ON MAILS(TO_USER_ID, CREATED_AT DESC);
-    CREATE INDEX IF NOT EXISTS idx_mails_from_user ON MAILS(FROM_USER_ID, CREATED_AT DESC);
+    CREATE INDEX IF NOT EXISTS idx_mails_to_user ON MAILS(TO_USER_ID, CREATED_AT);
+    CREATE INDEX IF NOT EXISTS idx_mails_from_user ON MAILS(FROM_USER_ID, CREATED_AT);
   `);
 
   const result = dbInstance.exec('SELECT COUNT(*) as c FROM USERS');
@@ -67,6 +79,8 @@ function initTable(dbInstance: SqlJsDb): void {
   );
 }
 
+const MUTATION_RE = /^\s*(INSERT|UPDATE|DELETE|REPLACE)\s/i;
+
 export async function query<T = unknown>(
   sql: string,
   binds: Record<string, unknown> = {}
@@ -85,6 +99,11 @@ export async function query<T = unknown>(
     rows.push(row);
   }
   stmt.free();
+
+  // INSERT / UPDATE / DELETE 후 파일에 저장 (영속성 보장)
+  if (MUTATION_RE.test(sql)) {
+    saveDb(dbInstance);
+  }
 
   return rows;
 }
