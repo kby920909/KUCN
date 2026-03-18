@@ -15,7 +15,17 @@ async function getDb(): Promise<SqlJsDb> {
     const dir = path.dirname(dbPath);
     if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
 
-    const SQL = await initSqlJs();
+    // Vercel/Lambda 등 번들 환경에서 WASM 파일 경로를 명시적으로 지정
+    const SQL = await initSqlJs({
+      locateFile: (fileName: string) => {
+        try {
+          // eslint-disable-next-line @typescript-eslint/no-var-requires
+          return require.resolve(`sql.js/dist/${fileName}`);
+        } catch {
+          return path.join(__dirname, '..', '..', 'node_modules', 'sql.js', 'dist', fileName);
+        }
+      },
+    });
     if (fs.existsSync(dbPath)) {
       const buf = fs.readFileSync(dbPath);
       db = new SQL.Database(buf);

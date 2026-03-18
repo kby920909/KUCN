@@ -20,7 +20,8 @@ interface MailRow {
  * 2. 요청 body / query 의 _userId (Vercel 프로덕션 - localStorage 로그인)
  */
 function resolveUserId(req: Request): string | null {
-  const sessionUser = req.session?.user;
+  // express-session에 user가 있으면 우선 사용
+  const sessionUser = req.session.user as { userId?: string } | undefined;
   if (sessionUser?.userId) return sessionUser.userId;
 
   const fallback =
