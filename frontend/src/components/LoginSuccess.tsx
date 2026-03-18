@@ -532,7 +532,8 @@ export function LoginSuccess({ userId, onLogout, onSwitchToToss, onBackButton }:
       'announcement': '공지사항',
       'hr': '인사통지서',
       'calendar': '달력',
-      'hr-write': '인사통지서 작성'
+      'hr-write': '인사통지서 작성',
+      'mail': '메일'
     };
 
     return (
